@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>테트리스</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse 1100px 700px at 50% -10%, #f2ecdf, transparent 70%), #e9e3d5;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 28px 16px 48px;
+    font-family: 'Courier Prime', ui-monospace, monospace;
+    color: #2b2721;
+  }
+  a { color: #b8452f; }
+  a:hover { color: #8d3223; }
+
+  .card {
+    width: 100%;
+    max-width: 720px;
+    background: #f7f3e8;
+    border: 1px solid #ded6c2;
+    border-radius: 2px;
+    box-shadow: 0 1px 0 #fffdf7 inset, 0 18px 40px -24px rgba(60,50,35,0.55);
+    padding: 26px 26px 30px;
+    background-image: linear-gradient(#efe9db 1px, transparent 1px);
+    background-size: 100% 28px;
+    background-position: 0 60px;
+  }
+
+  .header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 2px solid #2b2721;
+    padding-bottom: 10px;
+  }
+  .title-block { display: flex; flex-direction: column; gap: 4px; }
+  .kicker {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #8a8175;
+  }
+  h1 {
+    margin: 0;
+    font-family: 'Newsreader', Georgia, serif;
+    font-weight: 600;
+    font-size: 40px;
+    line-height: 0.95;
+    letter-spacing: -0.5px;
+  }
+  .best-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    border: 1.5px solid #b8452f;
+    color: #b8452f;
+    padding: 6px 10px;
+    transform: rotate(-1.5deg);
+  }
+  .best-box .label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .best-box .value {
+    font-family: 'Newsreader', Georgia, serif;
+    font-size: 26px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: flex-start;
+    margin-top: 22px;
+  }
+
+  .board-col { position: relative; flex: 1 1 300px; max-width: 340px; }
+  .board-frame {
+    border: 1.5px solid #2b2721;
+    padding: 6px;
+    background: #fdfbf4;
+  }
+  #board { display: block; width: 100%; height: auto; aspect-ratio: 1 / 2; }
+
+  .overlay {
+    position: absolute;
+    inset: 6px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: rgba(247,243,232,0.94);
+    text-align: center;
+    padding: 20px;
+  }
+  .overlay.visible { display: flex; }
+  .overlay .kicker { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #8a8175; }
+  .overlay h2 {
+    margin: 0;
+    font-family: 'Newsreader', Georgia, serif;
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 1.1;
+    color: #2b2721;
+    text-wrap: balance;
+  }
+  .overlay p {
+    margin: 0;
+    font-size: 13px;
+    color: #6f6659;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.7;
+  }
+  .overlay button {
+    margin-top: 4px;
+    background: #2b2721;
+    color: #f7f3e8;
+    border: none;
+    padding: 11px 22px;
+    cursor: pointer;
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+  .overlay button:hover { background: #b8452f; }
+  .overlay button:focus-visible { outline: 2px solid #b8452f; outline-offset: 3px; }
+
+  .side-col {
+    flex: 1 1 220px;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px 16px;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-top: 1px solid #2b2721;
+    padding-top: 6px;
+  }
+  .stat.secondary {
+    border-top: 1px solid #ded6c2;
+    margin-top: 12px;
+  }
+  .stat .label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #8a8175;
+  }
+  .stat .value {
+    font-family: 'Newsreader', Georgia, serif;
+    font-size: 34px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat.secondary .value { font-size: 22px; }
+  #status-value { font-size: 14px; line-height: 1.5; font-family: 'Courier Prime', monospace; }
+
+  .next-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-top: 1px solid #2b2721;
+    padding-top: 10px;
+  }
+  .next-row .label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #8a8175;
+    writing-mode: vertical-rl;
+  }
+  #next { display: block; width: 104px; height: 104px; }
+
+  .touch-controls {
+    display: none;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    border-top: 1px solid #2b2721;
+    padding-top: 12px;
+  }
+  @media (max-width: 620px), (pointer: coarse) {
+    .touch-controls { display: grid; }
+  }
+  .touch-controls button {
+    background: #f7f3e8;
+    border: 1.5px solid #2b2721;
+    color: #2b2721;
+    font-family: 'Courier Prime', monospace;
+    cursor: pointer;
+  }
+  .touch-controls button:active { background: #2b2721; color: #f7f3e8; }
+  #btn-left, #btn-right { grid-column: auto; height: 56px; font-size: 18px; }
+  #btn-rotate { height: 56px; font-size: 13px; }
+  #btn-soft, #btn-pause { height: 52px; font-size: 13px; }
+  #btn-hard {
+    height: 52px;
+    background: #2b2721;
+    border: 1.5px solid #2b2721;
+    color: #f7f3e8;
+    font-size: 13px;
+  }
+  #btn-hard:active { background: #2b2721; color: #f7f3e8; }
+
+  .keys {
+    border-top: 1px solid #ded6c2;
+    padding-top: 10px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 12px;
+    font-size: 11.5px;
+    color: #6f6659;
+    align-items: center;
+  }
+  .keys kbd {
+    border: 1px solid #cfc6b1;
+    background: #fdfbf4;
+    padding: 2px 7px;
+    font-size: 10.5px;
+    color: #2b2721;
+    text-align: center;
+    font-family: 'Courier Prime', monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <div class="title-block">
+      <div class="kicker">Block puzzle · 10 × 20</div>
+      <h1>테트리스</h1>
+    </div>
+    <div class="best-box">
+      <div class="label">Best</div>
+      <div class="value" id="best-value">0</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="board-col">
+      <div class="board-frame">
+        <canvas id="board"></canvas>
+      </div>
+      <div class="overlay" id="overlay">
+        <div class="kicker" id="overlay-kicker"></div>
+        <h2 id="overlay-title"></h2>
+        <p id="overlay-sub"></p>
+        <button id="overlay-action"></button>
+      </div>
+    </div>
+
+    <div class="side-col">
+      <div class="stats">
+        <div class="stat">
+          <div class="label">점수</div>
+          <div class="value" id="score-value">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">레벨</div>
+          <div class="value" id="level-value">1</div>
+        </div>
+        <div class="stat secondary">
+          <div class="label">지운 줄</div>
+          <div class="value" id="lines-value">0</div>
+        </div>
+        <div class="stat secondary">
+          <div class="label">상태</div>
+          <div id="status-value">진행 중</div>
+        </div>
+      </div>
+
+      <div class="next-row">
+        <div class="label">Next</div>
+        <canvas id="next"></canvas>
+      </div>
+
+      <div class="touch-controls">
+        <button id="btn-left">←</button>
+        <button id="btn-rotate">회전</button>
+        <button id="btn-right">→</button>
+        <button id="btn-soft">↓</button>
+        <button id="btn-hard">드롭</button>
+        <button id="btn-pause">일시정지</button>
+      </div>
+
+      <div class="keys">
+        <kbd>← →</kbd><span>이동</span>
+        <kbd>↑</kbd><span>회전</span>
+        <kbd>↓</kbd><span>소프트 드롭</span>
+        <kbd>Space</kbd><span>하드 드롭</span>
+        <kbd>P</kbd><span>일시정지</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const COLS = 10, ROWS = 20, CELL = 30;
+
+  const COLORS = { I: '#4a8fa6', O: '#dcae44', T: '#9a6fb0', S: '#6f9e5e', Z: '#cc5a44', J: '#4a5f9e', L: '#d08340' };
+
+  const SHAPES = {
+    I: [[[0,1],[1,1],[2,1],[3,1]],[[2,0],[2,1],[2,2],[2,3]],[[0,2],[1,2],[2,2],[3,2]],[[1,0],[1,1],[1,2],[1,3]]],
+    O: [[[1,0],[2,0],[1,1],[2,1]],[[1,0],[2,0],[1,1],[2,1]],[[1,0],[2,0],[1,1],[2,1]],[[1,0],[2,0],[1,1],[2,1]]],
+    T: [[[1,0],[0,1],[1,1],[2,1]],[[1,0],[1,1],[2,1],[1,2]],[[0,1],[1,1],[2,1],[1,2]],[[1,0],[0,1],[1,1],[1,2]]],
+    S: [[[1,0],[2,0],[0,1],[1,1]],[[1,0],[1,1],[2,1],[2,2]],[[1,1],[2,1],[0,2],[1,2]],[[0,0],[0,1],[1,1],[1,2]]],
+    Z: [[[0,0],[1,0],[1,1],[2,1]],[[2,0],[1,1],[2,1],[1,2]],[[0,1],[1,1],[1,2],[2,2]],[[1,0],[0,1],[1,1],[0,2]]],
+    J: [[[0,0],[0,1],[1,1],[2,1]],[[1,0],[2,0],[1,1],[1,2]],[[0,1],[1,1],[2,1],[2,2]],[[1,0],[1,1],[0,2],[1,2]]],
+    L: [[[2,0],[0,1],[1,1],[2,1]],[[1,0],[1,1],[1,2],[2,2]],[[0,1],[1,1],[2,1],[0,2]],[[0,0],[1,0],[1,1],[1,2]]]
+  };
+  const TYPES = Object.keys(SHAPES);
+
+  const el = {
+    board: document.getElementById('board'),
+    next: document.getElementById('next'),
+    overlay: document.getElementById('overlay'),
+    overlayKicker: document.getElementById('overlay-kicker'),
+    overlayTitle: document.getElementById('overlay-title'),
+    overlaySub: document.getElementById('overlay-sub'),
+    overlayAction: document.getElementById('overlay-action'),
+    best: document.getElementById('best-value'),
+    score: document.getElementById('score-value'),
+    level: document.getElementById('level-value'),
+    lines: document.getElementById('lines-value'),
+    status: document.getElementById('status-value'),
+    btnLeft: document.getElementById('btn-left'),
+    btnRight: document.getElementById('btn-right'),
+    btnRotate: document.getElementById('btn-rotate'),
+    btnSoft: document.getElementById('btn-soft'),
+    btnHard: document.getElementById('btn-hard'),
+    btnPause: document.getElementById('btn-pause')
+  };
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  el.board.width = COLS * CELL * dpr; el.board.height = ROWS * CELL * dpr;
+  el.next.width = 104 * dpr; el.next.height = 104 * dpr;
+  const ctx = el.board.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const nctx = el.next.getContext('2d'); nctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  function loadBest() { try { return Number(localStorage.getItem('tetris-best-score')) || 0; } catch (e) { return 0; } }
+  function saveBest(v) { try { localStorage.setItem('tetris-best-score', String(v)); } catch (e) {} }
+
+  let board, current, next, score, level, linesCleared, dropInterval, dropCounter, lastTime, gameOver, paused, rafId;
+  let best = loadBest();
+  el.best.textContent = best;
+
+  function randomType() { return TYPES[Math.floor(Math.random() * TYPES.length)]; }
+  function createBoard() { return Array.from({ length: ROWS }, () => Array(COLS).fill(null)); }
+  function newPiece(type) { return { type, rotation: 0, x: 0, y: 0 }; }
+  function cells(p) { return SHAPES[p.type][p.rotation].map(([cx, cy]) => [cx + p.x, cy + p.y]); }
+
+  function collides(piece, dx = 0, dy = 0, rotation = piece.rotation) {
+    const test = SHAPES[piece.type][rotation].map(([cx, cy]) => [cx + piece.x + dx, cy + piece.y + dy]);
+    for (const [x, y] of test) {
+      if (x < 0 || x >= COLS || y >= ROWS) return true;
+      if (y >= 0 && board[y][x]) return true;
+    }
+    return false;
+  }
+
+  function spawn() {
+    current = next || newPiece(randomType());
+    current.x = 3; current.y = -1;
+    next = newPiece(randomType());
+    drawNext();
+    if (collides(current, 0, 0)) endGame();
+  }
+
+  function merge() { for (const [x, y] of cells(current)) if (y >= 0) board[y][x] = current.type; }
+
+  function clearLines() {
+    let cleared = 0;
+    outer: for (let y = ROWS - 1; y >= 0; y--) {
+      for (let x = 0; x < COLS; x++) if (!board[y][x]) continue outer;
+      board.splice(y, 1);
+      board.unshift(Array(COLS).fill(null));
+      cleared++; y++;
+    }
+    if (cleared > 0) {
+      score += [0, 100, 300, 500, 800][cleared] * level;
+      linesCleared += cleared;
+      level = 1 + Math.floor(linesCleared / 10);
+      dropInterval = Math.max(100, 1000 - (level - 1) * 80);
+      sync();
+    }
+  }
+
+  function sync() {
+    el.score.textContent = score;
+    el.level.textContent = level;
+    el.lines.textContent = linesCleared;
+    el.best.textContent = best;
+  }
+
+  function hardDrop() { while (!collides(current, 0, 1)) current.y++; lockPiece(); }
+  function lockPiece() { merge(); clearLines(); spawn(); dropCounter = 0; }
+  function move(dx) { if (!collides(current, dx, 0)) current.x += dx; }
+  function softDrop() {
+    if (!collides(current, 0, 1)) { current.y++; score += 1; sync(); }
+    else lockPiece();
+  }
+  function rotate() {
+    const r = (current.rotation + 1) % 4;
+    for (const k of [0, -1, 1, -2, 2]) {
+      if (!collides(current, k, 0, r)) { current.x += k; current.rotation = r; return; }
+    }
+  }
+  function ghostY() { let gy = current.y; while (!collides({ ...current, y: gy }, 0, 1)) gy++; return gy; }
+
+  function block(c, x, y, color, size) {
+    const px = x * size, py = y * size;
+    c.fillStyle = color;
+    c.fillRect(px + 1.5, py + 1.5, size - 3, size - 3);
+    c.fillStyle = 'rgba(255,255,255,0.28)';
+    c.fillRect(px + 1.5, py + 1.5, size - 3, (size - 3) * 0.32);
+    c.strokeStyle = '#2b2721';
+    c.lineWidth = 1.4;
+    c.strokeRect(px + 1.5, py + 1.5, size - 3, size - 3);
+  }
+
+  function draw() {
+    const S = CELL, W = COLS * S, H = ROWS * S;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#fdfbf4';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = '#e6dfcd';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 1; x < COLS; x++) { ctx.moveTo(x * S + 0.5, 0); ctx.lineTo(x * S + 0.5, H); }
+    for (let y = 1; y < ROWS; y++) { ctx.moveTo(0, y * S + 0.5); ctx.lineTo(W, y * S + 0.5); }
+    ctx.stroke();
+
+    for (let y = 0; y < ROWS; y++)
+      for (let x = 0; x < COLS; x++)
+        if (board[y][x]) block(ctx, x, y, COLORS[board[y][x]], S);
+
+    if (current && !gameOver) {
+      const gy = ghostY();
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(43,39,33,0.45)';
+      ctx.lineWidth = 1.2;
+      for (const [cx, cy] of SHAPES[current.type][current.rotation]) {
+        const y = cy + gy;
+        if (y >= 0) ctx.strokeRect((cx + current.x) * S + 2, y * S + 2, S - 4, S - 4);
+      }
+      ctx.restore();
+
+      for (const [x, y] of cells(current)) if (y >= 0) block(ctx, x, y, COLORS[current.type], S);
+    }
+  }
+
+  function drawNext() {
+    const size = 20, box = 104;
+    nctx.clearRect(0, 0, box, box);
+    nctx.fillStyle = '#fdfbf4';
+    nctx.fillRect(0, 0, box, box);
+    nctx.strokeStyle = '#cfc6b1';
+    nctx.lineWidth = 1;
+    nctx.strokeRect(0.5, 0.5, box - 1, box - 1);
+    if (!next) return;
+    const shape = SHAPES[next.type][0];
+    const xs = shape.map(c => c[0]), ys = shape.map(c => c[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const offX = (box - (maxX - minX + 1) * size) / 2 - minX * size;
+    const offY = (box - (maxY - minY + 1) * size) / 2 - minY * size;
+    nctx.save();
+    nctx.translate(offX, offY);
+    for (const [cx, cy] of shape) block(nctx, cx, cy, COLORS[next.type], size);
+    nctx.restore();
+  }
+
+  function setStatus() {
+    el.status.textContent = gameOver ? '게임 오버' : (paused ? '일시정지' : '진행 중');
+    el.status.style.color = gameOver ? '#b8452f' : (paused ? '#a8802a' : '#6f6659');
+  }
+
+  function showOverlay() {
+    const isNewBest = gameOver && score >= best && score > 0;
+    el.overlayKicker.textContent = gameOver ? (isNewBest ? 'New record' : 'Game over') : 'Paused';
+    el.overlayTitle.textContent = gameOver ? (isNewBest ? '신기록 달성' : '게임 오버') : '일시정지';
+    el.overlaySub.textContent = gameOver ? `스코어 ${score} · 최고 기록 ${best}` : '이어서 하려면 P 를 누르세요';
+    el.overlayAction.textContent = gameOver ? '다시 시작 (Enter)' : '계속하기 (P)';
+    el.overlay.classList.add('visible');
+  }
+  function hideOverlay() { el.overlay.classList.remove('visible'); }
+
+  function endGame() {
+    gameOver = true;
+    if (score > best) { best = score; saveBest(best); }
+    sync();
+    setStatus();
+    showOverlay();
+    if (rafId) cancelAnimationFrame(rafId);
+  }
+
+  function togglePause() {
+    if (gameOver) return;
+    paused = !paused;
+    setStatus();
+    if (paused) { showOverlay(); }
+    else { hideOverlay(); lastTime = performance.now(); loop(); }
+  }
+
+  function reset() {
+    board = createBoard();
+    score = 0; level = 1; linesCleared = 0;
+    dropInterval = 1000; dropCounter = 0;
+    lastTime = performance.now();
+    gameOver = false; paused = false;
+    next = null;
+    hideOverlay();
+    setStatus();
+    spawn();
+    sync();
+    if (rafId) cancelAnimationFrame(rafId);
+    loop();
+  }
+
+  function loop(time = 0) {
+    if (gameOver || paused) return;
+    const delta = time - lastTime;
+    lastTime = time;
+    dropCounter += delta;
+    if (dropCounter > dropInterval) {
+      if (!collides(current, 0, 1)) current.y++;
+      else lockPiece();
+      dropCounter = 0;
+    }
+    draw();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function act(fn) { if (gameOver || paused) return; fn(); draw(); }
+
+  el.overlayAction.addEventListener('click', () => (gameOver ? reset() : togglePause()));
+  el.btnLeft.addEventListener('click', () => act(() => move(-1)));
+  el.btnRight.addEventListener('click', () => act(() => move(1)));
+  el.btnRotate.addEventListener('click', () => act(() => rotate()));
+  el.btnSoft.addEventListener('click', () => act(() => softDrop()));
+  el.btnHard.addEventListener('click', () => act(() => hardDrop()));
+  el.btnPause.addEventListener('click', () => togglePause());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && gameOver) { reset(); return; }
+    if (e.key.toLowerCase() === 'p') { togglePause(); return; }
+    if (gameOver || paused) return;
+    const map = {
+      ArrowLeft: () => move(-1), ArrowRight: () => move(1),
+      ArrowDown: () => softDrop(), ArrowUp: () => rotate(), ' ': () => hardDrop()
+    };
+    if (map[e.key]) { e.preventDefault(); map[e.key](); draw(); }
+  });
+
+  reset();
+})();
+</script>
+</body>
+</html>
